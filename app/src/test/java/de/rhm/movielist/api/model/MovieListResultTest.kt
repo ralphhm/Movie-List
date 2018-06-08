@@ -1,9 +1,13 @@
 package de.rhm.movielist.api.model
 
 import com.squareup.moshi.Moshi
-import de.rhm.movielist.api.DateAdapter
-import org.junit.Assert.*
+import de.rhm.movielist.api.ApiModule
+import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
+import org.koin.standalone.StandAloneContext
+import org.koin.standalone.inject
+import org.koin.test.AutoCloseKoinTest
 
 private const val JSON_RESPONSE = """
 {
@@ -28,10 +32,17 @@ private const val JSON_RESPONSE = """
 }
 """
 
-class MovieListResultTest {
+class MovieListResultTest: AutoCloseKoinTest() {
+
+    val moshi: Moshi by inject()
+
+    @Before
+    fun before(){
+        StandAloneContext.startKoin(listOf(ApiModule))
+    }
 
     @Test
-    fun parse() = Moshi.Builder().add(DateAdapter).build().adapter(MovieListResult::class.java).fromJson(JSON_RESPONSE)!!.run {
+    fun parse() = moshi.adapter(MovieListResult::class.java).fromJson(JSON_RESPONSE)!!.run {
         assertEquals("Jurassic World: Fallen Kingdom", title)
     }
 

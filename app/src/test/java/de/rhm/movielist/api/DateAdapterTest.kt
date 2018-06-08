@@ -2,16 +2,27 @@ package de.rhm.movielist.api
 
 import com.squareup.moshi.Moshi
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
+import org.koin.standalone.StandAloneContext
+import org.koin.standalone.inject
+import org.koin.test.AutoCloseKoinTest
 import java.util.*
 import java.util.Calendar.*
 
 private const val JSON = "\"2018-06-06\""
 
-class DateAdapterTest {
+class DateAdapterTest: AutoCloseKoinTest() {
+
+    val moshi: Moshi by inject()
+
+    @Before
+    fun before(){
+        StandAloneContext.startKoin(listOf(ApiModule))
+    }
 
     @Test
-    fun parse() = Moshi.Builder().add(DateAdapter).build().adapter(Date::class.java).fromJson(JSON)!!
+    fun parse() = moshi.adapter(Date::class.java).fromJson(JSON)!!
             .let { Calendar.getInstance().apply { time = it } }
             .run {
                 assertEquals(2018, get(YEAR))
