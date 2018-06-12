@@ -31,6 +31,7 @@ class MovieListActivity : AppCompatActivity() {
 
     private fun bind(uiState: MovieListUiState) = when (uiState) {
         Loading -> section.update(listOf(LoadingContentItem))
+        is Failure -> section.update(listOf(ErrorItem(uiState.retryAction)))
         is Result -> section.update(uiState.movies.map { MovieItem(it) })
     }
 
@@ -60,4 +61,9 @@ object LoadingContentItem : Item() {
     override fun bind(viewHolder: ViewHolder, position: Int) = Unit
 
     override fun getLayout() = R.layout.item_loading_content
+}
+
+class ErrorItem(private val retryAction: () -> Unit) : Item() {
+    override fun bind(viewHolder: ViewHolder, position: Int) = viewHolder.itemView.setOnClickListener { retryAction.invoke() }
+    override fun getLayout() = R.layout.item_error
 }

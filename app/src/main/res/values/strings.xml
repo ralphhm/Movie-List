@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Movie List</string>
-    <string name="loading_movies">Loading movies ...</string>
+    <string name="loading_movies">Loading movies …</string>
+    <string name="fetch_error">There was an error fetching the movies. Please click to retry.</string>
 </resources>

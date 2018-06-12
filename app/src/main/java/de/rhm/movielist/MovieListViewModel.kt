@@ -6,10 +6,11 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 
 class MovieListViewModel(movieListRepository: MovieListRepository) {
 
-    val uiState: Observable<out MovieListUiState> = movieListRepository.getMovies().toObservable().map { Result(it) as MovieListUiState}.startWith(Loading).observeOn(AndroidSchedulers.mainThread())
+    val uiState: Observable<out MovieListUiState> = movieListRepository.getMovies().toObservable().map { Result(it) as MovieListUiState}.onErrorReturn { Failure(it, {}) }.startWith(Loading).observeOn(AndroidSchedulers.mainThread())
 
 }
 
 sealed class MovieListUiState
 class Result(val movies: List<MovieListResult>) : MovieListUiState()
+class Failure(val cause: Throwable, val retryAction: () -> Unit) : MovieListUiState()
 object Loading : MovieListUiState()
