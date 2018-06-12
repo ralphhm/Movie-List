@@ -26,10 +26,11 @@ class MovieListActivity : AppCompatActivity() {
         setContentView(R.layout.activity_movie_list)
         setSupportActionBar(toolbar)
         content.adapter = GroupAdapter<ViewHolder>().apply { add(section) }
-        viewModel.uiState.subscribe { state -> bind(state)}.let { disposable.add(it) }
+        viewModel.uiState.subscribe { state -> bind(state) }.let { disposable.add(it) }
     }
 
-    private fun bind(uiState: MovieListUiState) = when(uiState) {
+    private fun bind(uiState: MovieListUiState) = when (uiState) {
+        Loading -> section.update(listOf(LoadingContentItem))
         is Result -> section.update(uiState.movies.map { MovieItem(it) })
     }
 
@@ -40,7 +41,7 @@ class MovieListActivity : AppCompatActivity() {
 
 }
 
-class MovieItem(private val movie: MovieListResult): Item() {
+class MovieItem(private val movie: MovieListResult) : Item() {
 
     val format = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
 
@@ -52,4 +53,11 @@ class MovieItem(private val movie: MovieListResult): Item() {
 
     override fun getLayout() = R.layout.item_movie
 
+}
+
+object LoadingContentItem : Item() {
+
+    override fun bind(viewHolder: ViewHolder, position: Int) = Unit
+
+    override fun getLayout() = R.layout.item_loading_content
 }
