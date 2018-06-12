@@ -45,4 +45,6 @@ val RepositoryModule = applicationContext {
     }
 
     bean { MovieListRepository(get()) }
+
+    bean { MovieListViewModel(get()) }
 }

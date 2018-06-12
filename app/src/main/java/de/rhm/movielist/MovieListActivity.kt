@@ -7,7 +7,7 @@ import com.xwray.groupie.Section
 import com.xwray.groupie.kotlinandroidextensions.Item
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
 import de.rhm.movielist.api.model.MovieListResult
-import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_movie_list.*
 import kotlinx.android.synthetic.main.content_movie_list.*
 import kotlinx.android.synthetic.main.item_movie.*
@@ -17,15 +17,25 @@ import java.text.SimpleDateFormat
 
 class MovieListActivity : AppCompatActivity() {
 
-    private val repository: MovieListRepository by inject()
+    private val viewModel: MovieListViewModel by inject()
     private val section = Section()
+    private val disposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_movie_list)
         setSupportActionBar(toolbar)
         content.adapter = GroupAdapter<ViewHolder>().apply { add(section) }
-        repository.getMovies().observeOn(AndroidSchedulers.mainThread()).subscribe { result -> section.update(result.map { MovieItem(it) })}
+        viewModel.uiState.subscribe { state -> bind(state)}.let { disposable.add(it) }
+    }
+
+    private fun bind(uiState: MovieListUiState) = when(uiState) {
+        is Result -> section.update(uiState.movies.map { MovieItem(it) })
+    }
+
+    override fun onDestroy() {
+        disposable.dispose()
+        super.onDestroy()
     }
 
 }
