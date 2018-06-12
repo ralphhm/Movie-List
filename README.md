@@ -12,6 +12,8 @@ TheMovieDatabaseApiKey="{API_KEY}"
 * [Moshi](https://github.com/square/moshi) JSON library to parse custom Date attributes
 * [RxJava 2](https://github.com/ReactiveX/RxJava) reactive extensions for the JVM to handle asynchronous events in a reactive/stream based way  
 * [Koin](https://insert-koin.io/) lightweight Kotlin dependency injection framework that allows simple ViewHolder injection and without code generation
+* [Groupie](https://github.com/lisawray/groupie) RecyclerView layout library that implements delegation pattern to easily add new item types   
 
 ##Improvements (potential next steps)
 * Allow API key to be specified as environment variable
+* Create intermediate model of MovieListResult to be passed to MovieItem that handles pre formatting
