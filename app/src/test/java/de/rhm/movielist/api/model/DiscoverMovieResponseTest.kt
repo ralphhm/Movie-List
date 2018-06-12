@@ -1,11 +1,11 @@
 package de.rhm.movielist.api.model
 
 import com.squareup.moshi.Moshi
-import de.rhm.movielist.api.ApiModule
+import de.rhm.movielist.RepositoryModule
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.koin.standalone.StandAloneContext
+import org.koin.standalone.StandAloneContext.startKoin
 import org.koin.standalone.inject
 import org.koin.test.AutoCloseKoinTest
 
@@ -377,7 +377,7 @@ class DiscoverMovieResponseTest: AutoCloseKoinTest() {
 
     @Before
     fun before(){
-        StandAloneContext.startKoin(listOf(ApiModule))
+        startKoin(listOf(RepositoryModule))
     }
 
     @Test
