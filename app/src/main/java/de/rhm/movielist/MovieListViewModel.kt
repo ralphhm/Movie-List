@@ -5,17 +5,21 @@ import de.rhm.movielist.api.model.MovieListResult
 import io.reactivex.Observable
 import io.reactivex.ObservableSource
 import io.reactivex.ObservableTransformer
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.PublishSubject
+import java.util.*
 
-class MovieListViewModel(repository: MovieListRepository): ViewModel() {
+typealias MovieList = List<MovieListResult>
+
+class MovieListViewModel(repository: MovieListRepository) : ViewModel() {
 
     private val uiAction = PublishSubject.create<FetchMovieListAction>()
     val uiState: Observable<out MovieListUiState> = uiAction
             //trigger fetch on ViewModel creation
-            .startWith(FetchMovieListAction)
+            .startWith(FetchMovieListAction())
             //on every trigger prepare a new fetch
-            .compose(ActionToState(repository, { uiAction.onNext(FetchMovieListAction) }))
+            .compose(ActionToState({action -> repository.getMovies(action.releasedUntil)}, { action -> uiAction.onNext(action) }))
             //cache last emitted ui state to preserve state on orientation change
             .replay(1)
             .autoConnect()
@@ -23,23 +27,23 @@ class MovieListViewModel(repository: MovieListRepository): ViewModel() {
 
 }
 
-object FetchMovieListAction
+class FetchMovieListAction(val releasedUntil: Date = Date())
 
 sealed class MovieListUiState
-class Result(val movies: List<MovieListResult>) : MovieListUiState()
+class Result(val movies: MovieList) : MovieListUiState()
 class Failure(val cause: Throwable, val retryAction: () -> Unit) : MovieListUiState()
 object Loading : MovieListUiState()
 
-class ActionToState(private val repository: MovieListRepository, private inline val retryAction: () -> Unit) : ObservableTransformer<FetchMovieListAction, MovieListUiState> {
+class ActionToState(private inline val call: (FetchMovieListAction) -> Single<MovieList>, private inline val retryAction: (FetchMovieListAction) -> Unit) : ObservableTransformer<FetchMovieListAction, MovieListUiState> {
 
-    override fun apply(upstream: Observable<FetchMovieListAction>): ObservableSource<MovieListUiState> = upstream.switchMap {
-        repository.getMovies().toObservable()
+    override fun apply(upstream: Observable<FetchMovieListAction>): ObservableSource<MovieListUiState> = upstream.switchMap { action ->
+        call.invoke(action)
                 //map success case
                 .map<MovieListUiState> { Result(it) }
                 //emit loading state while fetching
-                .startWith(Loading)
+                .toObservable().startWith(Loading)
                 //emit failure state if fetch failed providing an action that triggers another fetch
-                .onErrorReturn { Failure(it, retryAction) }
+                .onErrorReturn { Failure(it, { retryAction.invoke(action) }) }
     }
 
 }

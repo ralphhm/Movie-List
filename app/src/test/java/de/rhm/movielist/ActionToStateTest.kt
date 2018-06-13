@@ -1,5 +1,6 @@
 package de.rhm.movielist
 
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.whenever
 import io.reactivex.Single
@@ -21,27 +22,27 @@ class ActionToStateTest {
         }
     }
 
-    val timetableRepository = mock<MovieListRepository>()
-    val retryAction = mock<() -> Unit>()
+    val call = mock<(FetchMovieListAction) -> Single<MovieList>>()
+    val retryAction = mock<(FetchMovieListAction) -> Unit>()
     val observer = TestObserver.create<MovieListUiState>()
     val action: Subject<FetchMovieListAction> = PublishSubject.create()
 
     init {
-        ActionToState(timetableRepository, retryAction).apply(action).subscribe(observer)
+        ActionToState(call, retryAction).apply(action).subscribe(observer)
     }
 
     @Test
     fun emitsLoadingState() {
-        whenever(timetableRepository.getMovies()).thenReturn(Single.never())
-        action.onNext(FetchMovieListAction)
+        whenever(call.invoke(any())).thenReturn(Single.never())
+        action.onNext(FetchMovieListAction())
         observer.assertValue(Loading)
     }
 
     @Test
     fun emitsFailureState_afterError() {
         val exception = Exception()
-        whenever(timetableRepository.getMovies()).thenReturn(Single.error(exception))
-        action.onNext(FetchMovieListAction)
+        whenever(call.invoke(any())).thenReturn(Single.error(exception))
+        action.onNext(FetchMovieListAction())
         observer.values().run {
             assert(first() === Loading)
             assert(get(1) is Failure)
@@ -50,8 +51,8 @@ class ActionToStateTest {
 
     @Test
     fun emitsResultState_afterSuccess() {
-        whenever(timetableRepository.getMovies()).thenReturn(Single.just(emptyList()))
-        action.onNext(FetchMovieListAction)
+        whenever(call.invoke(any())).thenReturn(Single.just(emptyList()))
+        action.onNext(FetchMovieListAction())
         observer.values().run {
             assert(first() === Loading)
             assert(get(1) is Result)

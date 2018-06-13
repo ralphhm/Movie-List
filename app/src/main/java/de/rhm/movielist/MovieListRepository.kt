@@ -8,6 +8,6 @@ import java.util.*
 
 class MovieListRepository(private val service: TheMovieDatabaseService) {
 
-    fun getMovies(): Single<List<MovieListResult>> = service.discoverMovies(BuildConfig.THE_MOVIE_DATABASE_API_KEY, TMDbDate(Date())).map { it.movies }
+    fun getMovies(releaseDate: Date): Single<List<MovieListResult>> = service.discoverMovies(BuildConfig.THE_MOVIE_DATABASE_API_KEY, TMDbDate(releaseDate)).map { it.movies }
 
 }

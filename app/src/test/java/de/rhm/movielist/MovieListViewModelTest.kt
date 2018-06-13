@@ -1,5 +1,6 @@
 package de.rhm.movielist
 
+import com.nhaarman.mockito_kotlin.any
 import com.nhaarman.mockito_kotlin.doReturn
 import com.nhaarman.mockito_kotlin.mock
 import io.reactivex.Single
@@ -22,7 +23,7 @@ class MovieListViewModelTest {
     @Test
     fun secondSubscription_emitsCachedState() {
         val repository = mock<MovieListRepository> {
-            on { getMovies() } doReturn (Single.error(Exception()))
+            on { getMovies(any()) } doReturn (Single.error(Exception()))
         }
         val observer = TestObserver<MovieListUiState>()
         val viewModel = MovieListViewModel(repository)
