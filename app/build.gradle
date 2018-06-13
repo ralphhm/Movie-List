@@ -49,7 +49,7 @@ dependencies {
     //Support
     implementation "com.android.support:appcompat-v7:$support_version"
     implementation "com.android.support:design:$support_version"
-    implementation 'com.android.support.constraint:constraint-layout:1.1.1'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
 
     //Moshi
     implementation "com.squareup.moshi:moshi:$moshi_version"
