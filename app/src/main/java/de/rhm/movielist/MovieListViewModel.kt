@@ -30,7 +30,7 @@ class MovieListViewModel(repository: MovieListRepository) : ViewModel() {
 class FetchMovieListAction(val releasedUntil: Date = Date())
 
 sealed class MovieListUiState
-class Result(val movies: MovieList) : MovieListUiState()
+class Result(val movies: MovieList, val filterDate: Date, val filterAction: (Date) -> Unit) : MovieListUiState()
 class Failure(val cause: Throwable, val retryAction: () -> Unit) : MovieListUiState()
 object Loading : MovieListUiState()
 
@@ -39,7 +39,7 @@ class ActionToState(private inline val call: (FetchMovieListAction) -> Single<Mo
     override fun apply(upstream: Observable<FetchMovieListAction>): ObservableSource<MovieListUiState> = upstream.switchMap { action ->
         call.invoke(action)
                 //map success case
-                .map<MovieListUiState> { Result(it) }
+                .map<MovieListUiState> { Result(it, action.releasedUntil, {date -> retryAction.invoke(FetchMovieListAction(date))}) }
                 //emit loading state while fetching
                 .toObservable().startWith(Loading)
                 //emit failure state if fetch failed providing an action that triggers another fetch

@@ -1,6 +1,7 @@
 package de.rhm.movielist
 
 import android.os.Bundle
+import android.support.v4.app.FragmentManager
 import android.support.v7.app.AppCompatActivity
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.Section
@@ -10,16 +11,20 @@ import de.rhm.movielist.api.model.MovieListResult
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_movie_list.*
 import kotlinx.android.synthetic.main.content_movie_list.*
+import kotlinx.android.synthetic.main.item_filter_date.*
 import kotlinx.android.synthetic.main.item_movie.*
 import org.koin.android.architecture.ext.viewModel
 import java.text.DateFormat
 import java.text.SimpleDateFormat
+import java.util.*
+import java.util.Calendar.getInstance
 
 class MovieListActivity : AppCompatActivity() {
 
     private val viewModel by viewModel<MovieListViewModel>()
     private val section = Section()
     private val disposable = CompositeDisposable()
+    private val filterViewModel by viewModel<DateFilterViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +37,10 @@ class MovieListActivity : AppCompatActivity() {
     private fun bind(uiState: MovieListUiState) = when (uiState) {
         Loading -> section.update(listOf(LoadingContentItem))
         is Failure -> section.update(listOf(ErrorItem(uiState.retryAction)))
-        is Result -> section.update(uiState.movies.map { MovieItem(it) })
+        is Result -> {
+            filterViewModel.selected = DateFilter(uiState.filterDate.toDay(), uiState.filterAction)
+            section.update(listOf(FilterDateItem(uiState.filterDate, uiState.filterAction, supportFragmentManager)) + uiState.movies.map { MovieItem(it) })
+        }
     }
 
     override fun onDestroy() {
@@ -66,4 +74,17 @@ object LoadingContentItem : Item() {
 class ErrorItem(private val retryAction: () -> Unit) : Item() {
     override fun bind(viewHolder: ViewHolder, position: Int) = viewHolder.itemView.setOnClickListener { retryAction.invoke() }
     override fun getLayout() = R.layout.item_error
+}
+
+class FilterDateItem(date: Date, private val filterAction: (Date) -> Unit, val fragmentManager: FragmentManager): Item() {
+    val cal = getInstance().apply { time = date }
+    val formatter = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
+
+    override fun getLayout() = R.layout.item_filter_date
+    override fun bind(viewHolder: ViewHolder, position: Int) = with(viewHolder) {
+        filter_date.text = itemView.context.getString(R.string.released_until, formatter.format(cal.time))
+        action_change.setOnClickListener {
+            DatePickerFragment().show(fragmentManager, "datePicker")
+        }
+    }
 }
