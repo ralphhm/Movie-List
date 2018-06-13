@@ -1,5 +1,6 @@
 package de.rhm.movielist
 
+import android.arch.lifecycle.ViewModel
 import de.rhm.movielist.api.model.MovieListResult
 import io.reactivex.Observable
 import io.reactivex.ObservableSource
@@ -7,7 +8,7 @@ import io.reactivex.ObservableTransformer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.PublishSubject
 
-class MovieListViewModel(repository: MovieListRepository) {
+class MovieListViewModel(repository: MovieListRepository): ViewModel() {
 
     private val uiAction = PublishSubject.create<FetchMovieListAction>()
     val uiState: Observable<out MovieListUiState> = uiAction
@@ -15,6 +16,9 @@ class MovieListViewModel(repository: MovieListRepository) {
             .startWith(FetchMovieListAction)
             //on every trigger prepare a new fetch
             .compose(ActionToState(repository, { uiAction.onNext(FetchMovieListAction) }))
+            //cache last emitted ui state to preserve state on orientation change
+            .replay(1)
+            .autoConnect()
             .observeOn(AndroidSchedulers.mainThread())
 
 }

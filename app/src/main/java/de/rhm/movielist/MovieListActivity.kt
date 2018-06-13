@@ -11,13 +11,13 @@ import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_movie_list.*
 import kotlinx.android.synthetic.main.content_movie_list.*
 import kotlinx.android.synthetic.main.item_movie.*
-import org.koin.android.ext.android.inject
+import org.koin.android.architecture.ext.viewModel
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 
 class MovieListActivity : AppCompatActivity() {
 
-    private val viewModel: MovieListViewModel by inject()
+    private val viewModel by viewModel<MovieListViewModel>()
     private val section = Section()
     private val disposable = CompositeDisposable()
 
