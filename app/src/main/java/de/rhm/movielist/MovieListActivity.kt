@@ -60,6 +60,7 @@ data class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCod
         title.text = movie.title
         description.text = movie.description
         date.text = format.format(movie.release)
+        image.setImageURI(movie.imageUrl)
     }
 
     override fun getLayout() = R.layout.item_movie

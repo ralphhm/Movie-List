@@ -18,6 +18,7 @@ TheMovieDatabaseApiKey="{API_KEY}"
 * [RxJava 2](https://github.com/ReactiveX/RxJava) reactive extensions for the JVM to handle asynchronous events in a reactive/stream based way  
 * [Koin](https://insert-koin.io/) lightweight Kotlin dependency injection framework that allows simple ViewHolder injection and without code generation
 * [Groupie](https://github.com/lisawray/groupie) RecyclerView layout library that implements delegation pattern to easily add new item types   
+* [Fresco](http://frescolib.org) Image loading library for loading movie images
 
 ##Improvements (potential next steps)
 * Allow API key to be specified as environment variable
