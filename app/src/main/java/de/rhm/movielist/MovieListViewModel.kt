@@ -21,13 +21,14 @@ class MovieListViewModel(repository: MovieListRepository) : ViewModel() {
             //on every trigger prepare a new fetch
             .compose(ActionToState({ action -> repository.getMovies(action.filterDate, action.page) }, { action -> uiAction.onNext(action) }))
             .distinctUntilChanged()
-            .scan { last: MovieListUiState, current: MovieListUiState ->
+            .scan { previous, current ->
                 when {
-                    //when Result is followed by Loading with the same date
-                    last is Result && current is Loading && last.filterDate == current.filterDate -> LoadingMore(last)
-                    //when LoadingMore is followed by a successful Result, movie lists need to be aggregated
-                    last is LoadingMore && current is Result -> current.copy(last.lastResult.movies + current.movies)
-                    last is LoadingMore && current is Failure -> last.lastResult
+                //when Result is followed by Loading with the same date
+                    previous is Result && current is Loading && previous.filterDate == current.filterDate -> LoadingMore(previous)
+                //when LoadingMore is followed by a successful Result, movie lists need to be aggregated
+                    previous is LoadingMore && current is Result -> current.copy(previous.lastResult.movies + current.movies)
+                //when LoadingMore is followed by Failure fallback to previous successful Result
+                    previous is LoadingMore && current is Failure -> previous.lastResult
                     else -> current
                 }
             }
@@ -35,7 +36,6 @@ class MovieListViewModel(repository: MovieListRepository) : ViewModel() {
             .replay(1)
             .autoConnect()
             .observeOn(AndroidSchedulers.mainThread())
-
 }
 
 data class FetchMovieListAction(val filterDate: Date = Date(), val page: Int = 1)
@@ -44,21 +44,23 @@ sealed class MovieListUiState
 data class Result(val movies: MovieList, val filterDate: Date, val filterAction: (Date) -> Unit, val loadMoreAction: () -> Unit) : MovieListUiState()
 class Failure(val cause: Throwable, val retryAction: () -> Unit) : MovieListUiState()
 data class Loading(val filterDate: Date) : MovieListUiState()
-class LoadingMore(val lastResult: Result): MovieListUiState()
+class LoadingMore(val lastResult: Result) : MovieListUiState()
 
 class ActionToState(
         private inline val call: (FetchMovieListAction) -> Single<MovieList>,
         private inline val nextAction: (FetchMovieListAction) -> Unit
 ) : ObservableTransformer<FetchMovieListAction, MovieListUiState> {
 
-    override fun apply(upstream: Observable<FetchMovieListAction>): ObservableSource<MovieListUiState> = upstream.switchMap { action ->
-        call.invoke(action)
-                //map success case
-                .map<MovieListUiState> { Result(it, action.filterDate, { date -> nextAction.invoke(FetchMovieListAction(date)) }, { nextAction.invoke(action.copy(page = action.page + 1)) }) }
-                //emit loading state while fetching
-                .toObservable().startWith(Loading(action.filterDate))
-                //emit failure state if fetch failed providing an action that triggers another fetch
-                .onErrorReturn { Failure(it) { nextAction.invoke(action) } }
+    override fun apply(upstream: Observable<FetchMovieListAction>): ObservableSource<MovieListUiState> {
+        return upstream.switchMap { action ->
+            call.invoke(action)
+                    //map success case
+                    .map<MovieListUiState> { Result(it, action.filterDate, { date -> nextAction.invoke(FetchMovieListAction(date)) }, { nextAction.invoke(action.copy(page = action.page + 1)) }) }
+                    //emit loading state while fetching
+                    .toObservable().startWith(Loading(action.filterDate))
+                    //emit failure state if fetch failed providing an action that triggers another fetch
+                    .onErrorReturn { Failure(it) { nextAction.invoke(action) } }
+        }
     }
 
 }

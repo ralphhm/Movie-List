@@ -37,11 +37,11 @@ class MovieListActivity : AppCompatActivity() {
 
     private fun bind(uiState: MovieListUiState) = when (uiState) {
         is Loading -> section.update(listOf(LoadingContentItem))
-        is LoadingMore -> section.update(uiState.movies.map { MovieItem(it) } + LoadingMoreItem)
+        is LoadingMore -> section.update(uiState.lastResult.movies.map { MovieItem(it) } + LoadingMoreItem)
         is Failure -> section.update(listOf(ErrorItem(uiState.retryAction)))
         is Result -> {
             filterViewModel.selected = DateFilter(uiState.filterDate.toDay(), uiState.filterAction)
-            section.update(listOf(FilterDateItem(uiState.filterDate, uiState.filterAction, supportFragmentManager)) + uiState.movies.map { MovieItem(it) } + LoadMoreOnBindItem(uiState.loadMoreAction))
+            section.update(listOf(FilterDateItem(uiState.filterDate, supportFragmentManager)) + uiState.movies.map { MovieItem(it) } + LoadMoreOnBindItem(uiState.loadMoreAction))
         }
     }
 
@@ -52,9 +52,9 @@ class MovieListActivity : AppCompatActivity() {
 
 }
 
-class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCode().toLong().absoluteValue) {
+data class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCode().toLong().absoluteValue) {
 
-    val format = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
+    private val format = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
 
     override fun bind(viewHolder: ViewHolder, position: Int) = with(viewHolder) {
         title.text = movie.title
@@ -67,9 +67,7 @@ class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCode().t
 }
 
 object LoadingContentItem : Item() {
-
     override fun bind(viewHolder: ViewHolder, position: Int) = Unit
-
     override fun getLayout() = R.layout.item_loading_content
 }
 
@@ -78,11 +76,13 @@ class ErrorItem(private val retryAction: () -> Unit) : Item() {
     override fun getLayout() = R.layout.item_error
 }
 
-class FilterDateItem(date: Date, private val filterAction: (Date) -> Unit, val fragmentManager: FragmentManager) : Item() {
-    val cal = getInstance().apply { time = date }
-    val formatter = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
+class FilterDateItem(date: Date, private val fragmentManager: FragmentManager) : Item() {
+
+    private val cal = getInstance().apply { time = date }
+    private val formatter = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
 
     override fun getLayout() = R.layout.item_filter_date
+
     override fun bind(viewHolder: ViewHolder, position: Int) = with(viewHolder) {
         filter_date.text = itemView.context.getString(R.string.released_until, formatter.format(cal.time))
         action_change.setOnClickListener {

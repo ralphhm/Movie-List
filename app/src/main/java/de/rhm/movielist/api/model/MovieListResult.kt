@@ -5,7 +5,7 @@ import com.squareup.moshi.JsonClass
 import java.util.*
 
 @JsonClass(generateAdapter = true)
-class MovieListResult(@Json(name = "id") val id: String,
+data class MovieListResult(@Json(name = "id") val id: String,
                       @Json(name = "title") val title: String,
                       @Json(name = "release_date") val release: Date,
                       @Json(name = "overview") val description: String,
