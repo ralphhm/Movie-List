@@ -35,7 +35,9 @@ class ActionToStateTest {
     fun emitsLoadingState() {
         whenever(call.invoke(any())).thenReturn(Single.never())
         action.onNext(FetchMovieListAction())
-        observer.assertValue(Loading)
+        observer.values().run {
+            assert(first() is Loading)
+        }
     }
 
     @Test
@@ -44,7 +46,7 @@ class ActionToStateTest {
         whenever(call.invoke(any())).thenReturn(Single.error(exception))
         action.onNext(FetchMovieListAction())
         observer.values().run {
-            assert(first() === Loading)
+            assert(first() is Loading)
             assert(get(1) is Failure)
         }
     }
@@ -54,7 +56,7 @@ class ActionToStateTest {
         whenever(call.invoke(any())).thenReturn(Single.just(emptyList()))
         action.onNext(FetchMovieListAction())
         observer.values().run {
-            assert(first() === Loading)
+            assert(first() is Loading)
             assert(get(1) is Result)
         }
     }

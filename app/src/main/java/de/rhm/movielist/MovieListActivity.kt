@@ -18,6 +18,7 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.Calendar.getInstance
+import kotlin.math.absoluteValue
 
 class MovieListActivity : AppCompatActivity() {
 
@@ -35,11 +36,12 @@ class MovieListActivity : AppCompatActivity() {
     }
 
     private fun bind(uiState: MovieListUiState) = when (uiState) {
-        Loading -> section.update(listOf(LoadingContentItem))
+        is Loading -> section.update(listOf(LoadingContentItem))
+        is LoadingMore -> section.update(uiState.movies.map { MovieItem(it) } + LoadingMoreItem)
         is Failure -> section.update(listOf(ErrorItem(uiState.retryAction)))
         is Result -> {
             filterViewModel.selected = DateFilter(uiState.filterDate.toDay(), uiState.filterAction)
-            section.update(listOf(FilterDateItem(uiState.filterDate, uiState.filterAction, supportFragmentManager)) + uiState.movies.map { MovieItem(it) })
+            section.update(listOf(FilterDateItem(uiState.filterDate, uiState.filterAction, supportFragmentManager)) + uiState.movies.map { MovieItem(it) } + LoadMoreOnBindItem(uiState.loadMoreAction))
         }
     }
 
@@ -50,7 +52,7 @@ class MovieListActivity : AppCompatActivity() {
 
 }
 
-class MovieItem(private val movie: MovieListResult) : Item() {
+class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCode().toLong().absoluteValue) {
 
     val format = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
 
@@ -76,7 +78,7 @@ class ErrorItem(private val retryAction: () -> Unit) : Item() {
     override fun getLayout() = R.layout.item_error
 }
 
-class FilterDateItem(date: Date, private val filterAction: (Date) -> Unit, val fragmentManager: FragmentManager): Item() {
+class FilterDateItem(date: Date, private val filterAction: (Date) -> Unit, val fragmentManager: FragmentManager) : Item() {
     val cal = getInstance().apply { time = date }
     val formatter = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
 
@@ -87,4 +89,19 @@ class FilterDateItem(date: Date, private val filterAction: (Date) -> Unit, val f
             DatePickerFragment().show(fragmentManager, "datePicker")
         }
     }
+}
+
+object LoadingMoreItem : Item() {
+    override fun bind(viewHolder: ViewHolder, position: Int) = Unit
+    override fun getLayout() = R.layout.item_loading_more
+}
+
+class LoadMoreOnBindItem(private val loadMoreAction: () -> Unit) : Item() {
+
+    override fun bind(viewHolder: ViewHolder, position: Int) {
+        loadMoreAction.invoke()
+    }
+
+    override fun getLayout() = R.layout.item_empty
+
 }

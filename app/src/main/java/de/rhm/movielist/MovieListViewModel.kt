@@ -19,7 +19,16 @@ class MovieListViewModel(repository: MovieListRepository) : ViewModel() {
             //trigger fetch on ViewModel creation
             .startWith(FetchMovieListAction())
             //on every trigger prepare a new fetch
-            .compose(ActionToState({action -> repository.getMovies(action.releasedUntil)}, { action -> uiAction.onNext(action) }))
+            .compose(ActionToState({ action -> repository.getMovies(action.filterDate, action.page) }, { action -> uiAction.onNext(action) }))
+            .scan { last: MovieListUiState, current: MovieListUiState ->
+                when {
+                    //when Result is followed by Loading with the same date
+                    last is Result && current is Loading && last.filterDate == current.filterDate -> LoadingMore(last.movies)
+                    //when LoadingMore is followed by a successful Result, movie lists need to be aggregated
+                    last is LoadingMore && current is Result -> current.copy(last.movies + current.movies)
+                    else -> current
+                }
+            }
             //cache last emitted ui state to preserve state on orientation change
             .replay(1)
             .autoConnect()
@@ -27,23 +36,27 @@ class MovieListViewModel(repository: MovieListRepository) : ViewModel() {
 
 }
 
-class FetchMovieListAction(val releasedUntil: Date = Date())
+data class FetchMovieListAction(val filterDate: Date = Date(), val page: Int = 1)
 
 sealed class MovieListUiState
-class Result(val movies: MovieList, val filterDate: Date, val filterAction: (Date) -> Unit) : MovieListUiState()
+data class Result(val movies: MovieList, val filterDate: Date, val filterAction: (Date) -> Unit, val loadMoreAction: () -> Unit) : MovieListUiState()
 class Failure(val cause: Throwable, val retryAction: () -> Unit) : MovieListUiState()
-object Loading : MovieListUiState()
+class Loading(val filterDate: Date) : MovieListUiState()
+class LoadingMore(val movies: MovieList): MovieListUiState()
 
-class ActionToState(private inline val call: (FetchMovieListAction) -> Single<MovieList>, private inline val retryAction: (FetchMovieListAction) -> Unit) : ObservableTransformer<FetchMovieListAction, MovieListUiState> {
+class ActionToState(
+        private inline val call: (FetchMovieListAction) -> Single<MovieList>,
+        private inline val nextAction: (FetchMovieListAction) -> Unit
+) : ObservableTransformer<FetchMovieListAction, MovieListUiState> {
 
     override fun apply(upstream: Observable<FetchMovieListAction>): ObservableSource<MovieListUiState> = upstream.switchMap { action ->
         call.invoke(action)
                 //map success case
-                .map<MovieListUiState> { Result(it, action.releasedUntil, {date -> retryAction.invoke(FetchMovieListAction(date))}) }
+                .map<MovieListUiState> { Result(it, action.filterDate, { date -> nextAction.invoke(FetchMovieListAction(date)) }, { nextAction.invoke(action.copy(page = action.page + 1)) }) }
                 //emit loading state while fetching
-                .toObservable().startWith(Loading)
+                .toObservable().startWith(Loading(action.filterDate))
                 //emit failure state if fetch failed providing an action that triggers another fetch
-                .onErrorReturn { Failure(it, { retryAction.invoke(action) }) }
+                .onErrorReturn { Failure(it, { nextAction.invoke(action) }) }
     }
 
 }
