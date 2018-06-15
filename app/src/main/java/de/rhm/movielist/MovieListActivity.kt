@@ -1,5 +1,6 @@
 package de.rhm.movielist
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.FragmentManager
 import android.support.v7.app.AppCompatActivity
@@ -8,12 +9,15 @@ import com.xwray.groupie.Section
 import com.xwray.groupie.kotlinandroidextensions.Item
 import com.xwray.groupie.kotlinandroidextensions.ViewHolder
 import de.rhm.movielist.api.model.MovieListResult
+import de.rhm.movielist.movie.MovieDetailsActivity
+import de.rhm.movielist.movie.SelectedMovie
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_movie_list.*
 import kotlinx.android.synthetic.main.content_movie_list.*
 import kotlinx.android.synthetic.main.item_filter_date.*
 import kotlinx.android.synthetic.main.item_movie.*
 import org.koin.android.architecture.ext.viewModel
+import org.koin.android.ext.android.inject
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -26,12 +30,19 @@ class MovieListActivity : AppCompatActivity() {
     private val section = Section()
     private val disposable = CompositeDisposable()
     private val filterViewModel by viewModel<DateFilterViewModel>()
+    private val selectedMovie by inject<SelectedMovie>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_movie_list)
         setSupportActionBar(toolbar)
-        content.adapter = GroupAdapter<ViewHolder>().apply { add(section) }
+        content.adapter = GroupAdapter<ViewHolder>().apply {
+            add(section)
+            setOnItemClickListener { item, _ ->  (item as? MovieItem)?.let {
+                selectedMovie.value = item.movie
+                startActivity(Intent(this@MovieListActivity, MovieDetailsActivity::class.java))
+            }}
+        }
         viewModel.uiState.subscribe { state -> bind(state) }.let { disposable.add(it) }
     }
 
@@ -52,7 +63,7 @@ class MovieListActivity : AppCompatActivity() {
 
 }
 
-data class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCode().toLong().absoluteValue) {
+data class MovieItem(val movie: MovieListResult) : Item(movie.id.hashCode().toLong().absoluteValue) {
 
     private val format = SimpleDateFormat.getDateInstance(DateFormat.MEDIUM)
 
@@ -60,7 +71,7 @@ data class MovieItem(private val movie: MovieListResult) : Item(movie.id.hashCod
         title.text = movie.title
         description.text = movie.description
         date.text = format.format(movie.release)
-        image.setImageURI(movie.imageUrl)
+        image.setImageURI(movie.backdropUrl)
     }
 
     override fun getLayout() = R.layout.item_movie

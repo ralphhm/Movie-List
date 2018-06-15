@@ -3,6 +3,7 @@ package de.rhm.movielist
 import com.squareup.moshi.Moshi
 import de.rhm.movielist.api.DateAdapter
 import de.rhm.movielist.api.TheMovieDatabaseService
+import de.rhm.movielist.movie.SelectedMovie
 import io.reactivex.schedulers.Schedulers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -49,4 +50,6 @@ val RepositoryModule = applicationContext {
     bean { MovieListViewModel(get()) }
 
     bean { DateFilterViewModel() }
+
+    bean { SelectedMovie() }
 }
